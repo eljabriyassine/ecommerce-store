@@ -3,7 +3,7 @@ import { login, logout, singup } from "../controllers/auth.contoller.js";
 
 const router = express.Router();
 
-router.get("/singup", singup);
+router.post("/singup", singup);
 
 router.get("/login", login);
 
