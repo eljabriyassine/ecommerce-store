@@ -61,12 +61,43 @@ export const singup = async (req, res) => {
       message: "user created succefully",
     });
   } catch (err) {
-    res.status(500).send({ error: "Error encountered: " + err.message }); // Ensure to use send, not message
+    res.status(500).send({ error: "Error encountered: " + err.message });
   }
 };
 
 export const login = async (req, res) => {
-  res.send("login called");
+  try {
+    const { email, password } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      res.send({ message: "user not found" });
+    }
+
+    const isMatch = await user.matchPassword(password);
+
+    if (isMatch) {
+      // authenticate
+      const { accesToken, refreshToken } = generateToken(user._id);
+      await storeRefreshToken(user._id, refreshToken);
+
+      setCookies(res, accesToken, refreshToken);
+
+      res.send({
+        user: {
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        },
+        message: "login succefully",
+      });
+    } else {
+      res.send({ message: "password is incorrect" });
+    }
+  } catch (err) {
+    res.status(500).send({ error: "error server " + err.message });
+  }
 };
 
 export const logout = async (req, res) => {
@@ -84,5 +115,38 @@ export const logout = async (req, res) => {
     }
   } catch (err) {
     res.status(500).send({ message: "internal server occured" + err.message });
+  }
+};
+
+export const refreshToken = async (req, res) => {
+  try {
+    const refreshToken = req.cookies.refreshToken;
+
+    if (!refreshToken) {
+      res.status(401).send({ message: "no acces Token provided" });
+    }
+    const { userId } = jwt.verify(
+      refreshToken,
+      process.env.REFRESH_TOKEN_SECRET
+    );
+
+    const storedToken = await redis.get(`refreshToken:${userId}`);
+
+    if (storedToken !== refreshToken) {
+      res.status(401).send({ message: "Invalid refresh Token " });
+    }
+
+    const accesToken = jwt.sign({ userId }, process.env.ACCESS_TOKEN_SECRET, {
+      expiresIn: "15m",
+    });
+    res.cookie("accesToken", accesToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 15 * 60 * 1000,
+    });
+    res.json({ message: "token refreshed succefully" });
+  } catch (err) {
+    res.status(500).send({ message: "refresh token error:" + err.message });
   }
 };
