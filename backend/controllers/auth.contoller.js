@@ -82,7 +82,7 @@ export const login = async (req, res) => {
       await storeRefreshToken(user._id, refreshToken);
 
       setCookies(res, accesToken, refreshToken);
-
+      console.log(user);
       return res.send({
         user: {
           _id: user._id,
