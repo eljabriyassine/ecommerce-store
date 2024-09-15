@@ -71,7 +71,7 @@ export const login = async (req, res) => {
     const user = await User.findOne({ email });
 
     if (!user) {
-      res.send({ message: "user not found" });
+      return res.send({ message: "user not found" });
     }
 
     const isMatch = await user.matchPassword(password);
@@ -83,7 +83,7 @@ export const login = async (req, res) => {
 
       setCookies(res, accesToken, refreshToken);
 
-      res.send({
+      return res.send({
         user: {
           _id: user._id,
           name: user.name,
@@ -123,7 +123,7 @@ export const refreshToken = async (req, res) => {
     const refreshToken = req.cookies.refreshToken;
 
     if (!refreshToken) {
-      res.status(401).send({ message: "no acces Token provided" });
+      return res.status(401).send({ message: "no acces Token provided" });
     }
     const { userId } = jwt.verify(
       refreshToken,
@@ -133,7 +133,7 @@ export const refreshToken = async (req, res) => {
     const storedToken = await redis.get(`refreshToken:${userId}`);
 
     if (storedToken !== refreshToken) {
-      res.status(401).send({ message: "Invalid refresh Token " });
+      return res.status(401).send({ message: "Invalid refresh Token " });
     }
 
     const accesToken = jwt.sign({ userId }, process.env.ACCESS_TOKEN_SECRET, {
