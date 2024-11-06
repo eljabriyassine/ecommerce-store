@@ -1,16 +1,6 @@
 import Redis from "ioredis";
+import dotenv from "dotenv";
 
-const redis = new Redis({
-  host: "127.0.0.1",
-  port: 6379,
-});
+dotenv.config();
 
-redis.on("connect", () => {
-  console.log("Connected to Redis");
-});
-
-redis.on("error", (err) => {
-  console.error(`Redis error: ${err}`);
-});
-
-export default redis;
+export const redis = new Redis(process.env.UPSTASH_REDIS_URL);
